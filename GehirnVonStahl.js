@@ -6,8 +6,11 @@ class Machine {
         this.R = 0;
         this.S = 1;
 		
+		this.Crankcount = 0;
+		
 		// Code:
         this.History = [];
+		
 	}
 	
     command(cmd, operand) {
@@ -37,7 +40,7 @@ class Machine {
 	
     DONE() {
         this.command('DONE');
-        this.comment('Final result R=' + this.R);
+        this.comment('Final result after ' + this.Crankcount + ' cranks: R=' + this.R);
     }
 	
     LOAD(n) {
@@ -47,14 +50,17 @@ class Machine {
 
     CRANKFWD(repeat) {
         this.command('CRANKFWD ' + repeat);
-        this.R = this.R + repeat * (this.S * this.E);
-        this.U = this.U + repeat * this.S;
+        this.R += repeat * (this.S * this.E);
+        this.U += repeat * this.S;
+		this.Crankcount += repeat;
+		
 	}
 
     CRANKREV(repeat) {
         this.command('CRANKREV ' + repeat)
-        this.R = this.R - repeat * this.S * this.E
-        this.U = this.U - repeat * this.S * 1
+        this.R -= repeat * this.S * this.E
+        this.U -= repeat * this.S * 1
+		this.Crankcount += repeat;
 	}
 	
     RESETALL() {
@@ -390,7 +396,9 @@ class Machine {
 		this.comment('U=' + this.U);
 		
 		// Move Scale to home position
-		this.SCALEDWN(Math.log10(this.S));
+		if (this.S > 1) {
+			this.SCALEDWN(Math.log10(this.S));
+		}
 		
 		/* 
 			The result is in U, but scaled and negative. To be composable we
@@ -454,7 +462,8 @@ class Machine {
 		} else if (node.isOperatorNode && node.args && (node.args.length==2)) {
 			this.generate_code_BinOp(node);
 		} else if (node.isOperatorNode && (node.fn=='unaryMinus')) {
-			throw 'Stay positive!';
+			// replace unary minus with explicit subtraction from 0
+			this.generate_code(new math.OperatorNode('-', 'subtract', [new math.ConstantNode(0), node.args[0]]));
 		} else {
 			throw 'Don\'t know how to process node \'' +  node.name + '\'';
 		}
@@ -464,8 +473,6 @@ class Machine {
 		console.log('generate_code_from_str("' + expression + '")');
 		
 		const node = math.parse(expression);
-		
-		console.log(node);
 		
 		this.generate_code(node);
 		this.DONE();

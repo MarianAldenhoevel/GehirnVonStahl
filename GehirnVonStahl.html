@@ -12,13 +12,12 @@
 	</head>
 	<body>
 		<h1>Gehirn von Stahl</h1>
-		<p>Input an algebraic expression that you believe the Brunsviga may be able to evaluate. Find below the "code" required to do that or an error telling you why
-		you are wrong.</p>
+		<p>Input an algebraic expression that you believe the Brunsviga may be able to evaluate. Click the button. Then find below the "code" required to do that or an error telling you why you are wrong. You can also select any of the examples/test-cases.</p>
 		<p>Examples:
-			<ul id="ulExamples">
+			<ul id="ulExamples" style="font-family: monospace;">
 			</ul>
 		</p>
-		<a href="aExpression"><input id="edExpression" type="text" value="(12 + 45) * 607" /></a>
+		<a href="aExpression"></a><input id="edExpression" type="text" placeholder="(12 + 45) * 607" />
 		<button id="btnAssemble">assemble expression</button>
 		<div id="divError" style="color: red;"></div>
 		<div id="divCode" style="font-family: monospace; margin-top: 1em; margin-left: 1em;" ></div>
@@ -73,9 +72,9 @@
 			});
 			
 			// Set up examples.
-			addExample('1 + 2', 				'Simple Addition');
+			addExample('1 + 2', 				'Simple addition');
 			addExample('1 + 2 + 3',				'Series addition');
-			addExample('4 - 2',					'Simple Subtraction');
+			addExample('4 - 2',					'Simple subtraction');
 			addExample('4 - 1 - 1',				'Series subtraction');	
 			addExample('2 * 3',					'Simple multiplication');			
 			addExample('12 * 13',				'Simple multiplication');
@@ -83,16 +82,19 @@
 			addExample('156 / 12',				'Simple division');
 			addExample('645372 / 2758',			'Simple division');
 			addExample('1 / 3',					'Simple division');
+			addExample('-2',					'Unary Minus');
+			addExample('-2 + 5',				'Unary Minus');
 			addExample('22 / 7',				'Approximation of pi'); 
+			addExample('355 / 113',			    'Approximation of pi');
+			addExample('208341 / 66317',		'Approximation of pi');
 			addExample('9 - 8 + 7 - 6',			'Mixed addition and subtraction');
 			addExample('1 + 2 * 3',				'Combination w/o explicit order of operations');
 			addExample('(12 + 45) * 607',		'Combination /w explicit order of operations');
 			addExample('(10 - 2) * (30 + 4)',	'Another combination');
-			addExample('-2 + 5',				'Unary Minus');
 			
 			// Tests for error-conditions
 			addExample('',			'ERROR: No input');			
-			addExample('"a" + "b"',	'ERROR: Out of GvS\'s scope');
+			addExample('a + b',		'ERROR: Out of GvS\'s scope');
 			addExample('2.3*1.4',	'ERROR: Out of GvS\'s scope');
 			addExample('sin(0)',    'ERROR: Out of GvS\'s scope');
     
