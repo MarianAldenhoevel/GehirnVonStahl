@@ -28,6 +28,7 @@
 	
 	<script src="GehirnVonStahl.js"></script>
 	
+
 	<script>
 		var machine;
 		
@@ -38,7 +39,7 @@
 			
 			if (machine) {
 				for (c of machine.History) {
-					if (includeComments || (!c.command.startsWith(';') || c.command.startsWith('; Final result'))) {
+					if (includeComments || (!c.command.startsWith(';') || c.command.startsWith('; Final result') || c.command.includes('Math.js'))) {
 						var div = '<div' + (c.command.startsWith('; Final result') ? ' style="background-color: yellow;"' : '') + '>' + c.command + ((c.operand !== undefined) ? (' ' + c.operand) : '') + '</div>';
 						divCode.append(div);
 					}
