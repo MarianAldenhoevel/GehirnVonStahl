@@ -19,6 +19,8 @@
 		</p>
 		<a href="aExpression"></a><input id="edExpression" type="text" placeholder="(12 + 45) * 607" />
 		<button id="btnAssemble">assemble expression</button>
+		<input type="checkbox" id="cbIncludeComments" checked /><label for="cbIncludeComments">include comments</label>
+
 		<div id="divError" style="color: red;"></div>
 		<div id="divError" style="color: red;"></div>
 		<div id="divCode" style="font-family: monospace; margin-top: 1em; margin-left: 1em;" ></div>
@@ -27,6 +29,23 @@
 	<script src="GehirnVonStahl.js"></script>
 	
 	<script>
+		var machine;
+		
+		function list() {
+			divCode.empty();
+			
+			var includeComments = $('#cbIncludeComments').prop('checked');
+			
+			if (machine) {
+				for (c of machine.History) {
+					if (includeComments || (!c.command.startsWith(';') || c.command.startsWith('; Final result'))) {
+						var div = '<div' + (c.command.startsWith('; Final result') ? ' style="background-color: yellow;"' : '') + '>' + c.command + ((c.operand !== undefined) ? (' ' + c.operand) : '') + '</div>';
+						divCode.append(div);
+					}
+				}
+			}
+		}
+		
 		function assembleExpression() {
 			// console.log("assembleExpression()");
 			
@@ -37,14 +56,9 @@
 			divError.empty();
 			
 			try {
-				m = new Machine();
-				m.generate_code_from_str($('#edExpression').val());
-			
-			
-				for (c of m.History) {
-					var div = '<div' + (c.command.startsWith('; Final result') ? ' style="background-color: yellow;"' : '') + '>' + c.command + ((c.operand !== undefined) ? (' ' + c.operand) : '') + '</div>';
-					divCode.append(div);
-				}
+				machine = new Machine();
+				machine.generate_code_from_str($('#edExpression').val());
+				list();
 			} catch(e) {
 				divError.text(e);
 			}
@@ -70,6 +84,10 @@
 					assembleExpression();
 					return false;    //<---- Add this line
 				}
+			});
+			
+			$('#cbIncludeComments').change(function() {
+				list();
 			});
 			
 			// Set up examples.

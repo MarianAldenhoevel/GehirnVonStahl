@@ -24,7 +24,7 @@ class Machine {
         this.History.push(c);
 	}
 
-    list() {
+    list_to_console() {
         for(c in this.History) {
 			if (c.operand !== undefined) {
                 console.log(c.command + ' ' + str(c.operand))
@@ -40,8 +40,6 @@ class Machine {
 	
     DONE() {
         this.command('DONE');
-		console.log(this.Crankcount);
-        console.log(typeof this.Crankcount);
 		this.comment('Final result after ' + this.Crankcount + ' cranks: R=' + this.R);
     }
 	
