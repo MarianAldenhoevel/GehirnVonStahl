@@ -26,7 +26,7 @@ class Machine {
 
     list() {
         for(c in this.History) {
-            if (c.operand) {
+			if (c.operand !== undefined) {
                 console.log(c.command + ' ' + str(c.operand))
             } else {
                 console.log(c.command);
@@ -40,12 +40,20 @@ class Machine {
 	
     DONE() {
         this.command('DONE');
-        this.comment('Final result after ' + this.Crankcount + ' cranks: R=' + this.R);
+		console.log(this.Crankcount);
+        console.log(typeof this.Crankcount);
+		this.comment('Final result after ' + this.Crankcount + ' cranks: R=' + this.R);
     }
 	
     LOAD(n) {
         this.command('LOAD', n);        
         this.E = n;
+	}
+
+	LOADCond(n) {
+		if (this.E != n) {
+			this.LOAD(n);
+		}
 	}
 
     CRANKFWD(repeat) {
@@ -56,11 +64,23 @@ class Machine {
 		
 	}
 
+	CRANKFWDCond(repeat) {
+		if (this.E) {
+			this.CRANKFWD(repeat);
+		}
+	}
+
     CRANKREV(repeat) {
         this.command('CRANKREV ' + repeat)
         this.R -= repeat * this.S * this.E
         this.U -= repeat * this.S * 1
 		this.Crankcount += repeat;
+	}
+	
+	CRANKREVCond(repeat) {
+		if (this.E) {
+			this.CRANKREV(repeat);
+		}
 	}
 	
     RESETALL() {
@@ -75,10 +95,22 @@ class Machine {
         this.command('RESETR');
         this.R = 0;
 	}
+	
+	RESETRCond() {
+		if (this.R) {
+			this.RESETR();
+		}
+	}
 
     RESETU() {
         this.command('RESETU');
         this.U = 0;
+	}
+
+	RESETUCond() {
+        if (this.U) {
+			this.RESETU();
+		}
 	}
 
     SCALEUP(repeat = 1) {
@@ -146,7 +178,7 @@ class Machine {
 					Leave the first operand in the R-Register, set the
 					second from the immediate value in the E-Register
 				*/
-				this.LOAD(this.check_operand(second));
+				this.LOADCond(this.check_operand(second));
 			}				
 		} else {
 			/*
@@ -154,53 +186,52 @@ class Machine {
 				implies that the second is as well. So we can simply load the
 				first, set the second and are set up.
 			*/
-			if (this.R) {
-				this.RESETR();
-			}
-			this.LOAD(this.check_operand(first));
+			this.RESETRCond();
+			this.LOADCond(this.check_operand(first));
 			this.CRANKFWD(1);
-			this.LOAD(this.check_operand(second));
+			this.LOADCond(this.check_operand(second));
 		}
 		
 		// Do the actual addition
-		this.CRANKFWD(1)
+		this.CRANKFWDCond(1)
 
 		this.comment('End Add R=' + this.R);
 	}
 	
-	generate_code_BinOp_Sub(node) {
+	generate_code_BinOp_Sub(node) {	
 		this.comment('Begin Sub')
 
 		var second;
 
 		// Does the second operand require computation?
-		if (!node.args[1].isConstant) {
+		if (!node.args[1].isConstantNode) {
 			// Yes. Emit code to do it. The result will be end up in R.
 			this.generate_code(node.args[1])
 			second = this.R;
 		} else {
 			second = this.check_operand(node.args[1]);
 		}
-			
+
 		// Does the first operand require computation?
-		if (!node.args[0].isConstant) {
+		if (!node.args[0].isConstantNode) {
 			// Yes, we need to compute the first op. Emit code to do that.
 			this.generate_code(node.args[0]);
 				
 			// Now the value of the first operand is in the R-Register.
 		} else {
+
 			// No. We have an immediate value for the first operand. Put that
 			// into the R-Register
-			this.RESETR();
-			this.LOAD(this.check_operand(node.args[0]));
-			this.CRANKFWD(1);        
+			this.RESETRCond();		
+			this.LOADCond(this.check_operand(node.args[0]));
+			this.CRANKFWDCond(1);
 		}
-		
+
 		// Load the second operand into E.
-		this.LOAD(second);
+		this.LOADCond(second);
 		
 		// Do the actual subtraction
-		this.CRANKREV(1);
+		this.CRANKREVCond(1);
 
 		this.comment('End Sub R=' + this.R);
 	}
@@ -229,7 +260,7 @@ class Machine {
 		var right;
 		
 		// Does the first operand require computation?
-		if (!first.isConstant) {
+		if (!first.isConstantNode) {
 			//  Yes. Emit code to do it. The result will be end up in R.
 			this.generate_code(first);
 
@@ -237,7 +268,7 @@ class Machine {
 			left = this.R;
 
 			// Does the other operand require computation?
-			if (!second.isConstant) {
+			if (!second.isConstantNode) {
 				// Yes, we need to compute the second op 
 				
 				this.generate_code(second)
@@ -275,22 +306,17 @@ class Machine {
 			right = t;
 		}
 		
-		this.LOAD(left);
-		
-		if (this.R) {
-			this.RESETR();
-		}
-		
-		if (this.U) {
-			this.RESETU();
-		}
+		this.LOADCond(left);
+		this.RESETRCond();
+		this.RESETUCond();
 		
 		this.comment('Do Mult ' + left + '*' +  right);
 
-		// For each figure of the right operand, in reverse
 		var s = 0
 		var i = 0
-		var digits = right.toString().split('').reverse();
+		// For each figure of the right operand, in reverse. This abomination turns a number into a string, splits 
+		// that string into characters, reverses the list and maps each char back to an int.
+		var digits = right.toString().split('').reverse().map(function(x) { return parseInt(x) });
 		
 		for(var c of digits) {
 			// if not first figure scale up.
@@ -301,12 +327,14 @@ class Machine {
 			}
 
 			// Crank forward according to the value of the figure
-			this.CRANKFWD(c);
+			this.CRANKFWDCond(c);
 		}
 		
 		// Reset scale
-		this.SCALEDWN(s);
-
+		if (this.S > 1) {
+			this.SCALEDWN(s);
+		}
+		
 		this.comment('End Mult R=' + this.R);
 	}
 
@@ -321,7 +349,7 @@ class Machine {
 		var divisor;
 		
 		// Does the divisor require computation?
-		if (!node.args[1].isConstant) {
+		if (!node.args[1].isConstantNode) {
 			// Yes. Emit code to do it. The result will be end up in R.
 			this.generate_code(node.args[1]);
 
@@ -334,7 +362,7 @@ class Machine {
 		}
 		
 		// Does the dividend require computation?
-		if (node.args[0].isConstant) {
+		if (node.args[0].isConstantNode) {
 			// Yes. Emit code to do it. The result will be end up in R.
 			this.generate_code(node.args[0]);
 
@@ -348,10 +376,10 @@ class Machine {
 		
 		// We have divisor and dividend. We need to put the dividend into the
 		// R-Register scaled up.
-		this.RESETR();
+		this.RESETRCond();
 		this.SCALEUP(8);
-		this.LOAD(dividend);
-		this.CRANKFWD(1);
+		this.LOADCond(dividend);
+		this.CRANKFWDCond(1);
 		this.comment('R = ' + this.R);
 
 		// Scale divisor to align with the dividend and load into E-Register
@@ -359,22 +387,20 @@ class Machine {
 			divisor = 10 * divisor;
 		}
 		
-		this.LOAD(divisor);
+		this.LOADCond(divisor);
 
-		if (this.U) {
-			this.RESETU();
-		}
+		this.RESETUCond();
 		
 		while (true) {
 			// Subtract scaled divisor until zero or negative
 			while (this.R > 0) {
-				this.CRANKREV(1);
+				this.CRANKREVCond(1);
 			}
 			
 			if (this.R < 0) {
 				// One turn to many, the bell has sounded. Crank forward to correct the underflow.
 				this.comment('Ding!');
-				this.CRANKFWD(1);
+				this.CRANKFWDCond(1);
 			}
 
 			if (this.R == 0) {
@@ -412,9 +438,9 @@ class Machine {
 			res = res.substring(0,res.length-1);
 		}
 		
-		this.LOAD(res);
-		this.RESETR();
-		this.CRANKFWD(1);
+		this.LOADCond(res);
+		this.RESETRCond();
+		this.CRANKFWDCond(1);
 
 		this.comment('End Div R=' + this.R);
 	}
@@ -447,11 +473,9 @@ class Machine {
 
 	generate_code_Num(node) {
 		// Put an immediate value into the accumulator:
-		if (this.R) {
-			this.RESETR();
-		}
-		this.LOAD(this.check_operand(node));
-		this.CRANKFWD(1);
+		this.RESETRCond();
+		this.LOADCond(this.check_operand(node));
+		this.CRANKFWDCond(1);
 	}
 	
 	generate_code(node) {
@@ -470,7 +494,7 @@ class Machine {
 	}
 	
 	generate_code_from_str(expression) {
-		console.log('generate_code_from_str("' + expression + '")');
+		// console.log('generate_code_from_str("' + expression + '")');
 		
 		const node = math.parse(expression);
 		
