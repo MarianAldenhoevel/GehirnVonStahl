@@ -33,6 +33,20 @@
 	<script>
 		var machine;
 		
+		// Read a page's GET URL variables and return them as an associative array.
+		function getUrlVars()
+		{
+			var vars = [], hash;
+			var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
+			for(var i = 0; i < hashes.length; i++)
+			{
+				hash = hashes[i].split('=');
+				vars.push(hash[0]);
+				vars[hash[0]] = hash[1];
+			}
+			return vars;
+		}
+		
 		function list() {
 			divCode.empty();
 			
@@ -119,6 +133,13 @@
 			addExample('2.3*1.4',	'ERROR: Out of GvS\'s scope');
 			addExample('sin(0)',    'ERROR: Out of GvS\'s scope');
     
+			var urlvars = getUrlVars();
+			console.log(urlvars);
+			if (urlvars.q) {
+				$('#edExpression').val(urlvars.q);
+				assembleExpression();
+			}
+	
 		});
 	</script> 
 </html>	
