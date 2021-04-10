@@ -1,0 +1,101 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
+		<!--
+			<script src="jquery-3.6.0.min.js"></script>
+			<script src="math.min.js"></script> 
+		-->
+		<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
+		<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/9.3.0/math.min.js"></script>
+	</head>
+	<body>
+		<h1>Gehirn von Stahl</h1>
+		<p>Input an algebraic expression that you believe the Brunsviga may be able to evaluate. Find below the "code" required to do that or an error telling you why
+		you are wrong.</p>
+		<p>Examples:
+			<ul id="ulExamples">
+			</ul>
+		</p>
+		<a href="aExpression"><input id="edExpression" type="text" value="(12 + 45) * 607" /></a>
+		<button id="btnAssemble">assemble expression</button>
+		<div id="divError" style="color: red;"></div>
+		<div id="divCode" style="font-family: monospace; margin-top: 1em; margin-left: 1em;" ></div>
+	</body>
+	
+	<script src="GehirnVonStahl.js"></script>
+	
+	<script>
+		function assembleExpression() {
+			console.log("assembleExpression()");
+			
+			divCode = $('#divCode');
+			divCode.empty();
+			
+			divError = $('#divError');
+			divError.empty();
+			
+			try {
+				m = new Machine();
+				m.generate_code_from_str($('#edExpression').val());
+			
+			
+				for (c of m.History) {
+					var div = '<div' + (c.command.startsWith('; Final result') ? ' style="background-color: yellow;"' : '') + '>' + c.command + (c.operand ? (' ' + c.operand) : '') + '</div>';
+					divCode.append(div);
+				}
+			} catch(e) {
+				divError.text(e);
+			}
+		}
+		
+		function runExample(expression) {
+			$('#edExpression').val(expression);
+			assembleExpression();
+		}
+		
+		function addExample(expression, description) {
+			var li = '<li><a href="#aExpression" onclick="runExample(\'' + expression + '\')">' + description + ': ' + expression + '</a></li>';
+			$('#ulExamples').append(li);
+		}
+		
+		$(document).ready(function(){
+			$('#btnAssemble').click(function() {
+				assembleExpression();
+			});
+		
+			$('#edExpression').keypress(function (e) {
+				if (e.which == 13) {
+					assembleExpression();
+					return false;    //<---- Add this line
+				}
+			});
+			
+			// Set up examples.
+			addExample('1 + 2', 				'Simple Addition');
+			addExample('1 + 2 + 3',				'Series addition');
+			addExample('4 - 2',					'Simple Subtraction');
+			addExample('4 - 1 - 1',				'Series subtraction');	
+			addExample('2 * 3',					'Simple multiplication');			
+			addExample('12 * 13',				'Simple multiplication');
+			addExample('12 * 13 * 14',			'Series multiplication');
+			addExample('156 / 12',				'Simple division');
+			addExample('645372 / 2758',			'Simple division');
+			addExample('1 / 3',					'Simple division');
+			addExample('22 / 7',				'Approximation of pi'); 
+			addExample('9 - 8 + 7 - 6',			'Mixed addition and subtraction');
+			addExample('1 + 2 * 3',				'Combination w/o explicit order of operations');
+			addExample('(12 + 45) * 607',		'Combination /w explicit order of operations');
+			addExample('(10 - 2) * (30 + 4)',	'Another combination');
+			addExample('-2 + 5',				'Unary Minus');
+			
+			// Tests for error-conditions
+			addExample('',			'ERROR: No input');			
+			addExample('"a" + "b"',	'ERROR: Out of GvS\'s scope');
+			addExample('2.3*1.4',	'ERROR: Out of GvS\'s scope');
+			addExample('sin(0)',    'ERROR: Out of GvS\'s scope');
+    
+		});
+	</script> 
+</html>	
