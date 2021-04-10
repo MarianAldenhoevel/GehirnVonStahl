@@ -1,7 +1,7 @@
 # Gehirn Von Stahl
 Code and Description for a web-enabled mechanical calculator.
 
-[Concept](GvS.png)
+![Concept](GvS.png)
 
 A full description of the project can be found at
 
