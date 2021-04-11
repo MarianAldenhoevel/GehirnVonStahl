@@ -107,6 +107,7 @@
 				var result = machine.generate_code_from_str($('#edExpression').val());
 				list();
 			} catch(e) {
+				divError.text(e);
 				result = undefined;
 			}
 
