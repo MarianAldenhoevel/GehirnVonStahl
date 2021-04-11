@@ -63,7 +63,7 @@ class Machine {
 	}
 
 	CRANKFWDCond(repeat) {
-		if (this.E) {
+		if ((this.E) && repeat) {
 			this.CRANKFWD(repeat);
 		}
 	}
@@ -76,7 +76,7 @@ class Machine {
 	}
 	
 	CRANKREVCond(repeat) {
-		if (this.E) {
+		if ((this.E) && repeat) {
 			this.CRANKREV(repeat);
 		}
 	}
@@ -310,27 +310,34 @@ class Machine {
 		
 		this.comment('Do Mult ' + left + '*' +  right);
 
-		var s = 0
-		var i = 0
+		var s = 0;
+		var i = 0;
 		// For each figure of the right operand, in reverse. This abomination turns a number into a string, splits 
 		// that string into characters, reverses the list and maps each char back to an int.
 		var digits = right.toString().split('').reverse().map(function(x) { return parseInt(x) });
 		
 		for(var c of digits) {
-			// if not first figure scale up.
+			// If not first figure add to scale up.
 			i += 1
 			if (i > 1) {
-				this.SCALEUP(1);
-				s+=1;
+				s += 1;
 			}
 
-			// Crank forward according to the value of the figure
-			this.CRANKFWDCond(c);
+			// If the current figure is not zero apply accumulated scale up if any and then 
+			// crank forward according to the value of the figure.
+			if (c) {
+				if (s) {
+					this.SCALEUP(s);
+					s = 0;
+				}
+				
+				this.CRANKFWDCond(c);
+			}
 		}
 		
 		// Reset scale
 		if (this.S > 1) {
-			this.SCALEDWN(s);
+			this.SCALEDWN(math.log10(this.S));
 		}
 		
 		this.comment('End Mult R=' + this.R);
@@ -359,8 +366,12 @@ class Machine {
 			divisor = this.check_operand(node.args[1]);
 		}
 		
+		if (divisor == 0) {
+			throw "You tried to make me divide by zero. I am not having that.";
+		}
+		
 		// Does the dividend require computation?
-		if (node.args[0].isConstantNode) {
+		if (!node.args[0].isConstantNode) {
 			// Yes. Emit code to do it. The result will be end up in R.
 			this.generate_code(node.args[0]);
 
@@ -465,7 +476,7 @@ class Machine {
 		} else if (node.op == '/') {
 			this.generate_code_BinOp_Div(node);
 		} else {
-			throw ('Don\'t know how to process operand \'' + node.op + '\'');
+			throw ('Don\'t know how to process operation \'' + node.op + '\'');
 		}
 	}
 
@@ -483,22 +494,71 @@ class Machine {
 			this.generate_code(node.content);
 		} else if (node.isOperatorNode && node.args && (node.args.length==2)) {
 			this.generate_code_BinOp(node);
-		} else if (node.isOperatorNode && (node.fn=='unaryMinus')) {
-			// replace unary minus with explicit subtraction from 0
-			this.generate_code(new math.OperatorNode('-', 'subtract', [new math.ConstantNode(0), node.args[0]]));
 		} else {
 			throw 'Don\'t know how to process node \'' +  node.name + '\'';
 		}
 	}
 	
+	transform_tree(node) {
+		// Apply some transformations to the tree that either make it more palatable
+		// to the rest of the code or represent optimizations a basically moronic
+		// operator would make. Don't get too clever or you would spoil the experience.
+		// The limit case would be to just const-evaluate the whole thing right here.
+		
+		// First recurse down:		
+		for(var childindex in node.args) {
+			node.args[childindex] = this.transform_tree(node.args[childindex]);
+		}
+		
+		// Then do the transformations
+		if (node.isOperatorNode && (node.fn=='unaryMinus')) {
+			// Replace unary minus with explicit subtraction from 0
+			return new math.OperatorNode('-', 'subtract', [new math.ConstantNode(0), node.args[0]]);
+		} else if (node.isOperatorNode && (node.op=='+')) {
+			// Never add 0 or to 0.
+			if (node.args[0].isConstantNode && (node.args[0].value==0)) {
+				return node.args[1];
+			} else if (node.args[1].isConstantNode && (node.args[1].value==0)) {
+				return node.args[0];
+			}
+		} else if (node.isOperatorNode && (node.op=='-')) {
+			// Never subtract 0
+			if (node.args[1].isConstantNode && (node.args[1].value==0)) {
+				return node.args[0];
+			}
+		} else if (node.isOperatorNode && (node.op=='*')) {
+			// Never multiply by 1.
+			if (node.args[0].isConstantNode && (node.args[0].value==1)) {
+				return node.args[1];
+			} else if (node.args[1].isConstantNode && (node.args[1].value==1)) {
+				return node.args[0];
+			}
+		} else if (node.isOperatorNode && (node.op=='/')) {
+			// Never divide by 1
+			if (node.args[1].isConstantNode && (node.args[1].value==1)) {
+				return node.args[0];
+			}
+		}
+		
+		// Anything else returns unmodified
+		return node;
+		
+	}
+	
 	generate_code_from_str(expression) {
 		// console.log('generate_code_from_str("' + expression + '")');
 		
-		const node = math.parse(expression);
+		var node = math.parse(expression);
+		node = this.transform_tree(node);
+		
+		// console.log(node);
 		
 		this.generate_code(node);
 		this.DONE();
 		
-		this.comment('Math.js says: ' + node.evaluate().toString());
+		this.comment('Math.js says: ' + node.evaluate().toString()); 
+		
+		// Return the final result
+		return this.R;
 	}
 }

@@ -4,32 +4,54 @@
 	<head>
 		<meta http-equiv="Content-Type" content="text/html; charset=utf-8"/>
 		<!--
-			<script src="jquery-3.6.0.min.js"></script>
-			<script src="math.min.js"></script> 
-		-->
+		<script src="jquery-3.6.0.min.js"></script>
+		<script src="math.min.js"></script> 
+		-->		
 		<script src="https://code.jquery.com/jquery-3.6.0.min.js" integrity="sha256-/xUj+3OJU5yExlq6GSYGSHk7tPXikynS7ogEvDej/m4=" crossorigin="anonymous"></script>
 		<script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/9.3.0/math.min.js"></script>
+		<style>
+			.PASS {
+				color: green;
+			}
+			
+			.FAIL {
+				color: red;
+			}
+			
+			#divError {
+				color: red;
+			}
+			
+			#divCode {
+				font-family: monospace; 
+				margin-top: 1em; 
+				margin-left: 1em;
+			}
+		</style>
 	</head>
 	<body>
 		<h1>Gehirn von Stahl</h1>
-		<p>Input an algebraic expression that you believe the Brunsviga may be able to evaluate. Click the button. Then find below the "code" required to do that or an error telling you why you are wrong. You can also select any of the examples/test-cases.</p>
+		<p>Input an algebraic expression that you believe the Brunsviga may be able to evaluate. Click the button. Then find below the "code" required to do that or an error telling you why you are wrong. You can also select any of the examples/test-cases. Or run them all in a batch.</p>
 		<p>You can find details at <a href="https://marian-aldenhoevel.de/gehirn-von-stahl/">https://marian-aldenhoevel.de/gehirn-von-stahl/</a>.</p>
-		<p>Examples:
+		<div>
+			<a href="aExpression"></a><input id="edExpression" type="text" placeholder="(12 + 45) * 607" />		
+			<button id="btnAssemble">assemble expression</button>
+			<input type="checkbox" id="cbIncludeComments" checked /><label for="cbIncludeComments">include comments</label>
+		</div>
+		<div id="divError"></div>
+		<div id="divCode"></div>
+		
+		<p>Examples/Tests:
 			<ul id="ulExamples" style="font-family: monospace;">
 			</ul>
 		</p>
-		<a href="aExpression"></a><input id="edExpression" type="text" placeholder="(12 + 45) * 607" />
-		<button id="btnAssemble">assemble expression</button>
-		<input type="checkbox" id="cbIncludeComments" checked /><label for="cbIncludeComments">include comments</label>
-
-		<div id="divError" style="color: red;"></div>
-		<div id="divError" style="color: red;"></div>
-		<div id="divCode" style="font-family: monospace; margin-top: 1em; margin-left: 1em;" ></div>
+		<div>
+			<button id="btnRunAllTests">run all tests</button>
+		</div>
 	</body>
 	
 	<script src="GehirnVonStahl.js"></script>
 	
-
 	<script>
 		var machine;
 		
@@ -48,6 +70,7 @@
 		}
 		
 		function list() {
+			divCode = $('#divCode');
 			divCode.empty();
 			
 			var includeComments = $('#cbIncludeComments').prop('checked');
@@ -62,8 +85,7 @@
 			}
 		}
 		
-		function assembleExpression() {
-			// console.log("assembleExpression()");
+		function runExample(index) {
 			
 			divCode = $('#divCode');
 			divCode.empty();
@@ -71,23 +93,64 @@
 			divError = $('#divError');
 			divError.empty();
 			
+			$('#test_' + index +' .testresult').removeClass('PASS');
+			$('#test_' + index +' .testresult').removeClass('FAIL');			
+			
+			var expression = tests[index][0];
+			var expected =   tests[index][1];
+			var result =     undefined;
+			
+			$('#edExpression').val(expression);
+				
 			try {
 				machine = new Machine();
-				machine.generate_code_from_str($('#edExpression').val());
+				var result = machine.generate_code_from_str($('#edExpression').val());
 				list();
 			} catch(e) {
-				divError.text(e);
+				result = undefined;
 			}
+
+			if (result == expected)
+			{
+				$('#test_' + index +' .testresult').text('[PASS] ');
+				$('#test_' + index +' .testresult').addClass('PASS');
+			} else {
+				$('#test_' + index +' .testresult').text('[FAIL] ');
+				$('#test_' + index +' .testresult').addClass('FAIL');			
+			} 
 		}
 		
-		function runExample(expression) {
-			$('#edExpression').val(expression);
-			assembleExpression();
-		}
-		
-		function addExample(expression, description) {
-			var li = '<li><a href="#aExpression" onclick="runExample(\'' + expression + '\')">' + description + ': ' + expression + '</a></li>';
+		function addExample(index) {
+			var li = '<li id="test_' + index + '"><span class="testresult"></span><a href="#aExpression" onclick="runExample(' + index + ')">' + tests[index][2] + ': ' + tests[index][0] + '</a></li>';
 			$('#ulExamples').append(li);
+		}
+		
+		function runAllTests() {
+			$('#ulExamples li .testresult').empty();			
+			$('#test_' + index +' .testresult').removeClass('PASS');
+			$('#test_' + index +' .testresult').removeClass('FAIL');			
+			
+			for(index in tests) {
+				var expression = tests[index][0];
+				var expected =   tests[index][1];
+				var result =     undefined;
+				
+				try {
+					machine = new Machine();
+					result = machine.generate_code_from_str(expression);
+				} catch(e) {
+					result = undefined;
+				}
+					
+				if (result == expected)
+				{
+					$('#test_' + index +' .testresult').text('[PASS] ');
+					$('#test_' + index +' .testresult').addClass('PASS');
+				} else {
+					$('#test_' + index +' .testresult').text('[FAIL] ');
+					$('#test_' + index +' .testresult').addClass('FAIL');
+				}
+			}
 		}
 		
 		$(document).ready(function(){
@@ -106,35 +169,55 @@
 				list();
 			});
 			
-			// Set up examples.
-			addExample('1 + 2', 				'Simple addition');
-			addExample('1 + 2 + 3',				'Series addition');
-			addExample('4 - 2',					'Simple subtraction');
-			addExample('4 - 1 - 1',				'Series subtraction');	
-			addExample('2 * 3',					'Simple multiplication');			
-			addExample('12 * 13',				'Simple multiplication');
-			addExample('12 * 13 * 14',			'Series multiplication');
-			addExample('156 / 12',				'Simple division');
-			addExample('645372 / 2758',			'Simple division');
-			addExample('1 / 3',					'Simple division');
-			addExample('-2',					'Unary Minus');
-			addExample('-2 + 5',				'Unary Minus');
-			addExample('22 / 7',				'Approximation of pi'); 
-			addExample('355 / 113',			    'Approximation of pi');
-			addExample('208341 / 66317',		'Approximation of pi');
-			addExample('9 - 8 + 7 - 6',			'Mixed addition and subtraction');
-			addExample('1 + 2 * 3',				'Combination w/o explicit order of operations');
-			addExample('(12 + 45) * 607',		'Combination /w explicit order of operations');
-			addExample('(10 - 2) * (30 + 4)',	'Another combination');
+			$('#btnRunAllTests').click(function() {
+				runAllTests();
+			});
+		
+			// Set up examples/tests.
+			tests = [
+				['1 + 2', 				         3, 'Simple addition'],
+				['1 + 2 + 3',			         6, 'Series addition'],
+				['4 - 2',				         2, 'Simple subtraction'],
+				['4 - 1 - 1',			         2, 'Series subtraction'],	
+				['2 * 3',				         6, 'Simple multiplication'],			
+				['12 * 13',				       156, 'Simple multiplication'],
+				['12 * 13 * 14',		      2184, 'Series multiplication'],
+				['156 / 12',			 130000000, 'Simple division'],
+				['645372 / 2758',		 234000000, 'Simple division'],
+				['1 / 3',				  33333333, 'Simple division'],
+				['-2',					        -2, 'Unary Minus'],
+				['-2 + 5',				 		 3, 'Unary Minus'],
+				['22 / 7',				  31428571, 'Approximation of pi'], 
+				['355 / 113',			 314159292, 'Approximation of pi'],
+				['208341 / 66317',		  31415926, 'Approximation of pi'],
+				['9 - 8 + 7 - 6',		 		 2, 'Mixed addition and subtraction'],
+				['1 + 2 * 3',			 		 7, 'Combination w/o explicit order of operations'],
+				['(12 + 45) * 607',		 	 34599, 'Combination /w explicit order of operations'],
+				['(10 - 2) * (30 + 4)',	 	   272, 'Another combination'],
+							
+				// Examples of optimizations:
+				['1 + 0',	   1, 'SKIP: Never add 0'],
+				['0 + 1',	   1, 'SKIP: Never add 0'],
+				['1 - 0',	   1, 'SKIP: Never subtract 0'],
+				['5 * 1',	   5, 'SKIP: Never multiply by 1'],
+				['1 * 5',	   5, 'SKIP: Never multiply by 1'],
+				['5 / 1',	   5, 'SKIP: Never divide by 1'],
+				['2 * 101',  202, 'OPTIMIZE: Collect back-to-back scale-ups.'],
+				
+				// Tests for error-conditions
+				['',		    undefined, 'ERROR: No input'],			
+				['a + b',	    undefined, 'ERROR: Out of GvS\'s scope'],
+				['2.3*1.4',	    undefined, 'ERROR: Out of GvS\'s scope'],
+				['sin(0)',      undefined, 'ERROR: Out of GvS\'s scope'],
+				['1 / 0',       undefined, 'ERROR: Divide by zero'],
+				['1 / (1 - 1)', undefined, 'ERROR: Sneaky divide by zero']
+			]
 			
-			// Tests for error-conditions
-			addExample('',			'ERROR: No input');			
-			addExample('a + b',		'ERROR: Out of GvS\'s scope');
-			addExample('2.3*1.4',	'ERROR: Out of GvS\'s scope');
-			addExample('sin(0)',    'ERROR: Out of GvS\'s scope');
-    
+			for (index in tests) {
+				addExample(index);
+			}
+			
 			var urlvars = getUrlVars();
-			console.log(urlvars);
 			if (urlvars.q) {
 				$('#edExpression').val(urlvars.q);
 				assembleExpression();
