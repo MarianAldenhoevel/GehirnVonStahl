@@ -34,7 +34,7 @@
 		<p>Input an algebraic expression that you believe the Brunsviga may be able to evaluate. Click the button. Then find below the "code" required to do that or an error telling you why you are wrong. You can also select any of the examples/test-cases. Or run them all in a batch.</p>
 		<p>You can find details at <a href="https://marian-aldenhoevel.de/gehirn-von-stahl/">https://marian-aldenhoevel.de/gehirn-von-stahl/</a>.</p>
 		<div>
-			<a href="aExpression"></a><input id="edExpression" type="text" placeholder="(12 + 45) * 607" />		
+			<input id="edExpression" type="text" placeholder="(12 + 45) * 607" />		
 			<button id="btnAssemble">assemble expression</button>
 			<input type="checkbox" id="cbIncludeComments" checked /><label for="cbIncludeComments">include comments</label>
 		</div>
@@ -56,19 +56,47 @@
 		var machine;
 		
 		// Read the GET URL variables and return them as an associative array.
-		function getUrlVars()
-		{
+		function getUrlVars() {
 			var vars = {}
-			var hash;
-			var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
-			for (var i = 0; i < hashes.length; i++)
-			{
-				hash = hashes[i].split('=');
-				vars[hash[0]] = hash[1];
+		
+			if (window.location.href.indexOf('?') != -1) { 
+				var hashes = window.location.href.slice(window.location.href.indexOf('?') + 1).split('&');
+				for (var i = 0; i < hashes.length; i++)
+				{
+					var hash = hashes[i].split('=');
+					vars[hash[0]] = decodeURI(hash[1]);
+				}
 			}
+		
 			return vars;
 		}
 		
+		function replaceUrlVar(key, value) {
+			vars = getUrlVars();
+			vars[key] = value;
+			
+			var path = window.location.href;
+			if (path.indexOf('?') != -1) { 
+				path = path.slice(0, path.indexOf('?'));
+			}
+			
+			console.log(path);
+			
+			varpart = ""
+			for(key in vars) {
+				if (varpart) {
+					varpart += '&';
+				}
+				varpart += key + '=' + vars[key];
+			}
+			
+			var newurl = path + '?' + varpart;
+			console.log(vars);
+			console.log(newurl);
+			
+			window.history.pushState('', window.title, newurl);
+		}
+ 
 		function list() {
 			divCode = $('#divCode');
 			divCode.empty();
@@ -85,32 +113,40 @@
 			}
 		}
 		
-		function runExample(index) {
+		function assembleExpression() {
 			
 			divCode = $('#divCode');
 			divCode.empty();
 			
 			divError = $('#divError');
 			divError.empty();
-			
-			$('#test_' + index +' .testresult').removeClass('PASS');
-			$('#test_' + index +' .testresult').removeClass('FAIL');			
-			
-			var expression = tests[index][0];
-			var expected =   tests[index][1];
-			var result =     undefined;
-			
-			$('#edExpression').val(expression);
 				
+			var expression = $('#edExpression').val();
+			replaceUrlVar('q', expression); 
+			
 			try {
 				machine = new Machine();
-				var result = machine.generate_code_from_str($('#edExpression').val());
+				var result = machine.generate_code_from_str(expression);
 				list();
 			} catch(e) {
 				divError.text(e);
 				result = undefined;
 			}
 
+			return result; 
+		}
+		
+		function runExample(index) {
+			
+			$('#test_' + index +' .testresult').removeClass('PASS');
+			$('#test_' + index +' .testresult').removeClass('FAIL');			
+			
+			var expression = tests[index][0];
+			var expected =   tests[index][1];
+			
+			$('#edExpression').val(expression);
+			var result = assembleExpression();
+			
 			if (result == expected)
 			{
 				$('#test_' + index +' .testresult').text('[PASS] ');
@@ -122,7 +158,7 @@
 		}
 		
 		function addExample(index) {
-			var li = '<li id="test_' + index + '"><span class="testresult"></span><a href="#aExpression" onclick="runExample(' + index + ')">' + tests[index][2] + ': ' + tests[index][0] + '</a></li>';
+			var li = '<li id="test_' + index + '"><span class="testresult"></span><a href="?q=' + tests[index][0] + '" onclick="runExample(' + index + ')">' + tests[index][2] + ': ' + tests[index][0] + '</a></li>';
 			$('#ulExamples').append(li);
 		}
 		
@@ -155,14 +191,14 @@
 		}
 		
 		$(document).ready(function(){
-			$('#btnAssemble').click(function() {
+			$('#btnAssembleExpression').click(function() {
 				assembleExpression();
 			});
 		
 			$('#edExpression').keypress(function (e) {
 				if (e.which == 13) {
 					assembleExpression();
-					return false;    //<---- Add this line
+					return false;
 				}
 			});
 			
