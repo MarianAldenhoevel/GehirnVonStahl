@@ -2,18 +2,17 @@ class Machine {
 
 	constructor() {
 		this.E = 0;
-        this.U = 0;
-        this.R = 0;
-        this.S = 1;
+        	this.U = 0;
+        	this.R = 0;
+        	this.S = 1;
 		
 		this.Crankcount = 0;
 		
 		// Code:
-        this.History = [];
-		
+        	this.History = [];
 	}
 	
-    command(cmd, operand) {
+	command(cmd, operand) {
 		var c = {
 			'command': cmd, 
 			'operand': operand
@@ -21,31 +20,31 @@ class Machine {
 		
 		// console.log(c);
 		
-        this.History.push(c);
+        	this.History.push(c);
 	}
 
-    list_to_console() {
-        for(c in this.History) {
+    	list_to_console() {
+        	for(c in this.History) {
 			if (c.operand !== undefined) {
-                console.log(c.command + ' ' + str(c.operand))
-            } else {
-                console.log(c.command);
+                		console.log(c.command + ' ' + str(c.operand))
+            		} else {
+                		console.log(c.command);
 			}
 		}
 	}
 
-    comment(message) {
+    	comment(message) {
 		this.command('; ' + message);
 	}
 	
-    DONE() {
-        this.command('DONE');
+    	DONE() {
+        	this.command('DONE');
 		this.comment('Final result after ' + this.Crankcount + ' cranks: R=' + this.R);
-    }
+    	}
 	
-    LOAD(n) {
-        this.command('LOAD', n);        
-        this.E = n;
+    	LOAD(n) {
+        	this.command('LOAD', n);        
+        	this.E = n;
 	}
 
 	LOADCond(n) {
@@ -54,12 +53,11 @@ class Machine {
 		}
 	}
 
-    CRANKFWD(repeat) {
-        this.command('CRANKFWD ' + repeat);
-        this.R += repeat * (this.S * this.E);
-        this.U += repeat * this.S;
+    	CRANKFWD(repeat) {
+        	this.command('CRANKFWD ' + repeat);
+        	this.R += repeat * (this.S * this.E);
+        	this.U += repeat * this.S;
 		this.Crankcount += repeat;
-		
 	}
 
 	CRANKFWDCond(repeat) {
@@ -68,10 +66,10 @@ class Machine {
 		}
 	}
 
-    CRANKREV(repeat) {
-        this.command('CRANKREV ' + repeat)
-        this.R -= repeat * this.S * this.E
-        this.U -= repeat * this.S * 1
+    	CRANKREV(repeat) {
+        	this.command('CRANKREV ' + repeat)
+        	this.R -= repeat * this.S * this.E
+        	this.U -= repeat * this.S * 1
 		this.Crankcount += repeat;
 	}
 	
@@ -81,17 +79,17 @@ class Machine {
 		}
 	}
 	
-    RESETALL() {
-        this.command('RESETALL');
-        this.E = 0;
-        this.U = 0;
-        this.R = 0;
-        this.S = 1;
+    	RESETALL() {
+        	this.command('RESETALL');
+        	this.E = 0;
+        	this.U = 0;
+        	this.R = 0;
+        	this.S = 1;
 	}
 
-    RESETR() {
-        this.command('RESETR');
-        this.R = 0;
+    	RESETR() {
+        	this.command('RESETR');
+        	this.R = 0;
 	}
 	
 	RESETRCond() {
@@ -100,25 +98,25 @@ class Machine {
 		}
 	}
 
-    RESETU() {
-        this.command('RESETU');
-        this.U = 0;
+    	RESETU() {
+        	this.command('RESETU');
+        	this.U = 0;
 	}
 
 	RESETUCond() {
-        if (this.U) {
+        	if (this.U) {
 			this.RESETU();
 		}
 	}
 
-    SCALEUP(repeat = 1) {
-        this.command('SCALEUP ' + repeat);
-        this.S = this.S * 10**repeat;
+    	SCALEUP(repeat = 1) {
+        	this.command('SCALEUP ' + repeat);
+        	this.S = this.S * 10**repeat;
 	}
 
-    SCALEDWN(repeat = 1) {
-        this.command('SCALEDWN ' + repeat);
-        this.S = Math.trunc(this.S / 10**repeat);
+    	SCALEDWN(repeat = 1) {
+        	this.command('SCALEDWN ' + repeat);
+        	this.S = Math.trunc(this.S / 10**repeat);
 	}
 	
 	check_operand(node) {
@@ -128,7 +126,7 @@ class Machine {
 			if (node.value % 1 === 0) {
 				// it's an integer
 				if (node.value<0) {
-				throw ('\'' + node.value + '\'? No negative inputs please.');
+					throw ('\'' + node.value + '\'? No negative inputs please.');
 				}
 			} else {
 				throw ('\'' + node.value + '\'? I am a fixed-point machine. Please give me integers only, I deal with the value, you with the scale.');
@@ -164,7 +162,7 @@ class Machine {
 			
 			// Does the other operand require computation?
 			if (!second.isConstantNode) {
-				// Yes, we need to compute the second op 
+				// Yes, we need to compute the second op. 
 				
 				// Emit code to compute the second.
 				this.generate_code(second)
@@ -299,6 +297,7 @@ class Machine {
 		var rightdigitsum = digitsum(right);
 		
 		if (rightdigitsum > leftdigitsum) {
+			// swap 
 			var t = left;
 			left = right;
 			right = t;
@@ -312,19 +311,19 @@ class Machine {
 
 		var s = 0;
 		var i = 0;
-		// For each figure of the right operand, in reverse. This abomination turns a number into a string, splits 
+		// For each digit of the right operand, in reverse. This abomination turns a number into a string, splits 
 		// that string into characters, reverses the list and maps each char back to an int.
 		var digits = right.toString().split('').reverse().map(function(x) { return parseInt(x) });
 		
 		for(var c of digits) {
-			// If not first figure add to scale up.
+			// If not first digit add to scale up.
 			i += 1
 			if (i > 1) {
 				s += 1;
 			}
 
-			// If the current figure is not zero apply accumulated scale up if any and then 
-			// crank forward according to the value of the figure.
+			// If the current digit is not zero apply accumulated scale up if any and then 
+			// crank forward according to the value of the digit.
 			if (c) {
 				if (s) {
 					this.SCALEUP(s);
@@ -335,7 +334,7 @@ class Machine {
 			}
 		}
 		
-		// Reset scale
+		// Reset scale.
 		if (this.S > 1) {
 			this.SCALEDWN(math.log10(this.S));
 		}
@@ -430,7 +429,7 @@ class Machine {
 		
 		this.comment('U=' + this.U);
 		
-		// Move Scale to home position
+		// Move Scale to home position.
 		if (this.S > 1) {
 			this.SCALEDWN(Math.log10(this.S));
 		}
@@ -438,7 +437,7 @@ class Machine {
 		/* 
 			The result is in U, but scaled and negative. To be composable we
 			want it in R. A human operator would just copy it off. So we do
-			the same. The scaling issue we take care of by chopping of trailing
+			the same. The scaling issue we take care of by chopping off trailing
 			zeroes. We are happy to have the human figure out where the decimal
 			point has to go.
 		*/
@@ -462,7 +461,7 @@ class Machine {
 		 result will be in the Resultwerk-Register R.
 		
 		 For each of the operations and each combination of immediate
-		 vs complex there is a preferred way of doing them that
+		 vs expression there is a preferred way of doing them that
 		 minimizes the need for transfer of values between registers
 		 or the stack (i.e. to write down intermediate values).
 		*/
@@ -481,7 +480,7 @@ class Machine {
 	}
 
 	generate_code_Num(node) {
-		// Put an immediate value into the accumulator:
+		// Put an immediate value into the accumulator.
 		this.RESETRCond();
 		this.LOADCond(this.check_operand(node));
 		this.CRANKFWDCond(1);
@@ -510,7 +509,7 @@ class Machine {
 			node.args[childindex] = this.transform_tree(node.args[childindex]);
 		}
 		
-		// Then do the transformations
+		// Then do the transformations.
 		if (node.isOperatorNode && (node.fn=='unaryMinus')) {
 			// Replace unary minus with explicit subtraction from 0
 			return new math.OperatorNode('-', 'subtract', [new math.ConstantNode(0), node.args[0]]);
@@ -540,9 +539,8 @@ class Machine {
 			}
 		}
 		
-		// Anything else returns unmodified
+		// Anything else returns unmodified.
 		return node;
-		
 	}
 	
 	generate_code_from_str(expression) {
